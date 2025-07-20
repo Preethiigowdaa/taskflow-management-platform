@@ -19,7 +19,8 @@
     "tailwind-merge": "^1.14.0",
     "date-fns": "^2.30.0",
     "react-beautiful-dnd": "^13.1.1",
-    "@types/react-beautiful-dnd": "^13.1.4"
+    "@types/react-beautiful-dnd": "^13.1.4",
+    "axios": "^1.6.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",

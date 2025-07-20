@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import apiService, { LoginCredentials, RegisterData } from '../services/api'
 
-interface User {
+interface LocalUser {
   id: string
   name: string
   email: string
@@ -8,7 +9,7 @@ interface User {
 }
 
 interface AuthContextType {
-  user: User | null
+  user: LocalUser | null
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
@@ -30,36 +31,60 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<LocalUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check for stored user data on app load
-    const storedUser = localStorage.getItem('taskflow_user')
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
+    // Check for stored token and get current user
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('taskflow_token')
+        if (token) {
+          const response = await apiService.getCurrentUser()
+          if (response.success && response.data) {
+            const apiUser = response.data
+            const user: LocalUser = {
+              id: apiUser._id,
+              name: apiUser.name,
+              email: apiUser.email,
+              avatar: apiUser.avatar
+            }
+            setUser(user)
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error)
+        // Clear invalid tokens
+        localStorage.removeItem('taskflow_token')
+        localStorage.removeItem('taskflow_refresh_token')
+      } finally {
+        setIsLoading(false)
+      }
     }
-    setIsLoading(false)
+
+    checkAuth()
   }, [])
 
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const credentials: LoginCredentials = { email, password }
+      const response = await apiService.login(credentials)
       
-      // Mock user data
-      const mockUser: User = {
-        id: '1',
-        name: 'John Doe',
-        email: email,
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+      if (response.success && (response as any).user) {
+        const apiUser = (response as any).user
+        const user: LocalUser = {
+          id: apiUser._id,
+          name: apiUser.name,
+          email: apiUser.email,
+          avatar: apiUser.avatar
+        }
+        setUser(user)
+      } else {
+        throw new Error(response.message || 'Login failed')
       }
-      
-      setUser(mockUser)
-      localStorage.setItem('taskflow_user', JSON.stringify(mockUser))
-    } catch (error) {
-      throw new Error('Login failed')
+    } catch (error: any) {
+      throw new Error(error.message || 'Login failed')
     } finally {
       setIsLoading(false)
     }
@@ -68,29 +93,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signup = async (name: string, email: string, password: string) => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const data: RegisterData = { name, email, password }
+      const response = await apiService.register(data)
       
-      // Mock user data
-      const mockUser: User = {
-        id: '1',
-        name: name,
-        email: email,
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+      if (response.success && (response as any).user) {
+        const apiUser = (response as any).user
+        const user: LocalUser = {
+          id: apiUser._id,
+          name: apiUser.name,
+          email: apiUser.email,
+          avatar: apiUser.avatar
+        }
+        setUser(user)
+      } else {
+        throw new Error(response.message || 'Signup failed')
       }
-      
-      setUser(mockUser)
-      localStorage.setItem('taskflow_user', JSON.stringify(mockUser))
-    } catch (error) {
-      throw new Error('Signup failed')
+    } catch (error: any) {
+      throw new Error(error.message || 'Signup failed')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem('taskflow_user')
+  const logout = async () => {
+    try {
+      await apiService.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      setUser(null)
+    }
   }
 
   const value = {
