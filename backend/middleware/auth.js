@@ -78,13 +78,18 @@ const adminMiddleware = (req, res, next) => {
 const workspacePermissionMiddleware = (requiredRole = 'member') => {
   return async (req, res, next) => {
     try {
-      const { workspaceId } = req.params;
+      const workspaceId = req.params.id || req.params.workspaceId;
       const userId = req.user._id;
+
+      console.log('Workspace permission middleware - workspaceId:', workspaceId);
+      console.log('Workspace permission middleware - userId:', userId);
 
       // Import Workspace model here to avoid circular dependency
       const Workspace = require('../models/Workspace');
       
       const workspace = await Workspace.findById(workspaceId);
+      
+      console.log('Workspace permission middleware - workspace found:', !!workspace);
       
       if (!workspace) {
         return res.status(404).json({
@@ -117,13 +122,18 @@ const workspacePermissionMiddleware = (requiredRole = 'member') => {
 const taskPermissionMiddleware = (requiredRole = 'member') => {
   return async (req, res, next) => {
     try {
-      const { taskId } = req.params;
+      const taskId = req.params.id || req.params.taskId;
       const userId = req.user._id;
+
+      console.log('Task permission middleware - taskId:', taskId);
+      console.log('Task permission middleware - userId:', userId);
 
       // Import Task model here to avoid circular dependency
       const Task = require('../models/Task');
       
       const task = await Task.findById(taskId).populate('workspace');
+      
+      console.log('Task permission middleware - task found:', !!task);
       
       if (!task) {
         return res.status(404).json({

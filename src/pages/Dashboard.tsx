@@ -2,32 +2,28 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { 
-  Plus, 
   Search, 
-  Filter, 
   Bell, 
-  Settings, 
-  LogOut,
-  BarChart3,
   Users,
-  Calendar,
   CheckCircle,
   Clock,
   AlertCircle,
   MoreVertical,
-  User
+  Activity,
+  Plus,
+  BarChart3,
+  Target
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import KanbanBoard from '../components/KanbanBoard'
+import apiService, { Workspace } from '../services/api'
+import TaskBoard from '../components/TaskBoard'
 import AnalyticsCard from '../components/AnalyticsCard'
-
-interface Workspace {
-  id: string
-  name: string
-  description: string
-  memberCount: number
-  color: string
-}
+import UserProfile from '../components/UserProfile'
+import TeamManagement from '../components/TeamManagement'
+import TeamActivity from '../components/TeamActivity'
+import AnalyticsDashboard from '../components/AnalyticsDashboard'
+import RealTimeMetrics from '../components/RealTimeMetrics'
+import GoalTracking from '../components/GoalTracking'
 
 const Dashboard = () => {
   const { user, logout } = useAuth()
@@ -35,57 +31,70 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null)
 
-  const workspaces: Workspace[] = [
-    {
-      id: '1',
-      name: 'Product Development',
-      description: 'Main product development workspace',
-      memberCount: 8,
-      color: 'bg-blue-500'
-    },
-    {
-      id: '2',
-      name: 'Marketing Campaign',
-      description: 'Q1 marketing initiatives',
-      memberCount: 5,
-      color: 'bg-green-500'
-    },
-    {
-      id: '3',
-      name: 'Customer Support',
-      description: 'Support ticket management',
-      memberCount: 12,
-      color: 'bg-purple-500'
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [isLoadingWorkspaces, setIsLoadingWorkspaces] = useState(true)
+  const [showUserProfile, setShowUserProfile] = useState(false)
+  const [showTeamManagement, setShowTeamManagement] = useState(false)
+  const [showTeamActivity, setShowTeamActivity] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showGoalTracking, setShowGoalTracking] = useState(false)
+
+  // Debug: Log selected workspace
+  console.log('Selected workspace:', selectedWorkspace)
+  console.log('Available workspaces:', workspaces)
+
+  // Load real workspaces from API
+  useEffect(() => {
+    const loadWorkspaces = async () => {
+      try {
+        setIsLoadingWorkspaces(true)
+        const response = await apiService.getWorkspaces()
+        if (response.success && response.data) {
+          setWorkspaces(response.data)
+          // Set the first workspace as selected if none is selected
+          if (!selectedWorkspace && response.data.length > 0) {
+            setSelectedWorkspace(response.data[0]._id)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading workspaces:', error)
+      } finally {
+        setIsLoadingWorkspaces(false)
+      }
     }
-  ]
+
+    if (user) {
+      loadWorkspaces()
+    }
+  }, [user, selectedWorkspace])
 
   const analytics = [
     {
       title: 'Total Tasks',
       value: '124',
       change: '+12%',
-      changeType: 'positive',
+      changeType: 'positive' as const,
       icon: <CheckCircle className="w-6 h-6" />
     },
     {
       title: 'In Progress',
       value: '34',
       change: '+5%',
-      changeType: 'positive',
+      changeType: 'positive' as const,
       icon: <Clock className="w-6 h-6" />
     },
     {
       title: 'Overdue',
       value: '8',
       change: '-2%',
-      changeType: 'negative',
+      changeType: 'negative' as const,
       icon: <AlertCircle className="w-6 h-6" />
     },
     {
       title: 'Team Members',
       value: '25',
       change: '+3',
-      changeType: 'positive',
+      changeType: 'positive' as const,
       icon: <Users className="w-6 h-6" />
     }
   ]
@@ -96,10 +105,7 @@ const Dashboard = () => {
     }
   }, [user, navigate])
 
-  const handleLogout = () => {
-    logout()
-    navigate('/')
-  }
+
 
   if (!user) {
     return null
@@ -122,10 +128,10 @@ const Dashboard = () => {
               <div className="hidden md:flex items-center space-x-2">
                 {workspaces.map((workspace) => (
                   <button
-                    key={workspace.id}
-                    onClick={() => setSelectedWorkspace(workspace.id)}
+                    key={workspace._id}
+                    onClick={() => setSelectedWorkspace(workspace._id)}
                     className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                      selectedWorkspace === workspace.id
+                      selectedWorkspace === workspace._id
                         ? 'bg-primary-100 text-primary-700'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
@@ -148,12 +154,43 @@ const Dashboard = () => {
                 />
               </div>
 
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-                <Bell className="w-5 h-5" />
+              <button 
+                onClick={() => setShowTeamActivity(true)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                title="Team Activity"
+              >
+                <Activity className="w-5 h-5" />
+              </button>
+              
+              <button 
+                onClick={() => setShowTeamManagement(true)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                title="Team Management"
+              >
+                <Users className="w-5 h-5" />
+              </button>
+              
+              <button 
+                onClick={() => setShowAnalytics(true)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                title="Analytics Dashboard"
+              >
+                <BarChart3 className="w-5 h-5" />
+              </button>
+              
+              <button 
+                onClick={() => setShowGoalTracking(true)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                title="Goal Tracking"
+              >
+                <Target className="w-5 h-5" />
               </button>
 
               <div className="relative">
-                <button className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg">
+                <button 
+                  onClick={() => setShowUserProfile(true)}
+                  className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg"
+                >
                   <img
                     src={user.avatar}
                     alt={user.name}
@@ -172,6 +209,18 @@ const Dashboard = () => {
 
       <div className="px-6 py-8">
         <div className="max-w-7xl mx-auto">
+          {/* Real-time Metrics */}
+          {selectedWorkspace && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Real-time Metrics</h3>
+              <RealTimeMetrics workspaceId={selectedWorkspace} />
+            </motion.div>
+          )}
+
           {/* Analytics Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -192,23 +241,110 @@ const Dashboard = () => {
             >
               <option value="">Select Workspace</option>
               {workspaces.map((workspace) => (
-                <option key={workspace.id} value={workspace.id}>
+                <option key={workspace._id} value={workspace._id}>
                   {workspace.name}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Kanban Board */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <KanbanBoard workspaceId={selectedWorkspace || '1'} />
-          </motion.div>
+          {/* Workspace Selection or Create Workspace */}
+          {isLoadingWorkspaces ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            </div>
+          ) : workspaces.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-12"
+            >
+              <div className="max-w-md mx-auto">
+                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🏢</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No Workspaces Yet
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Create your first workspace to start organizing tasks and collaborating with your team.
+                </p>
+                <button
+                  onClick={() => navigate('/create-workspace')}
+                  className="btn-primary"
+                >
+                  Create Your First Workspace
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <TaskBoard workspaceId={selectedWorkspace || workspaces[0]?._id || ''} />
+            </motion.div>
+          )}
         </div>
       </div>
+
+      {/* User Profile Modal */}
+      {showUserProfile && (
+        <UserProfile onClose={() => setShowUserProfile(false)} />
+      )}
+
+      {/* Team Management Modal */}
+      {showTeamManagement && workspaces.length > 0 && (
+        <TeamManagement 
+          workspace={workspaces.find(w => w._id === selectedWorkspace) || workspaces[0]}
+          onClose={() => setShowTeamManagement(false)}
+          onUpdate={async () => {
+            // Refresh workspaces to get updated member list
+            try {
+              const response = await apiService.getWorkspaces()
+              if (response.success && response.data) {
+                setWorkspaces(response.data)
+              }
+            } catch (error) {
+              console.error('Error refreshing workspaces:', error)
+            }
+          }}
+        />
+      )}
+
+      {/* Team Activity Modal */}
+      {showTeamActivity && (
+        <TeamActivity 
+          workspaceId={selectedWorkspace || workspaces[0]?._id || ''}
+          onClose={() => setShowTeamActivity(false)}
+        />
+      )}
+
+      {/* Analytics Dashboard Modal */}
+      {showAnalytics && workspaces.length > 0 && (
+        <AnalyticsDashboard 
+          workspace={workspaces.find(w => w._id === selectedWorkspace) || workspaces[0]}
+          onClose={() => setShowAnalytics(false)}
+        />
+      )}
+
+      {/* Goal Tracking Modal */}
+      {showGoalTracking && (
+        <GoalTracking 
+          workspaceId={selectedWorkspace || workspaces[0]?._id || ''}
+          onClose={() => setShowGoalTracking(false)}
+        />
+      )}
+
+      {/* Floating Create Workspace Button */}
+      <button
+        onClick={() => navigate('/create-workspace')}
+        className="fixed bottom-6 right-6 bg-primary-600 text-white p-4 rounded-full shadow-lg hover:bg-primary-700 transition-colors z-40"
+        title="Create New Workspace"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
     </div>
   )
 }

@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import Dashboard from './pages/Dashboard'
 import Workspace from './pages/Workspace'
+import CreateWorkspace from './pages/CreateWorkspace'
 import { AuthProvider } from './contexts/AuthContext'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/workspace/:id" element={<Workspace />} />
+          <Route path="/create-workspace" element={<CreateWorkspace />} />
         </Routes>
       </AnimatePresence>
     </AuthProvider>

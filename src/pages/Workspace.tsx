@@ -12,7 +12,8 @@ import {
   Filter
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import KanbanBoard from '../components/KanbanBoard'
+import apiService, { Workspace as ApiWorkspace } from '../services/api'
+import TaskBoard from '../components/TaskBoard'
 
 interface WorkspaceData {
   id: string
@@ -206,7 +207,7 @@ const Workspace = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <KanbanBoard workspaceId={workspace.id} />
+            <TaskBoard workspaceId={workspace.id} />
           </motion.div>
         </div>
       </div>

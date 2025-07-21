@@ -10,9 +10,17 @@ const router = express.Router();
 // @desc    Get all tasks for a workspace
 // @route   GET /api/tasks
 // @access  Private
-router.get('/', workspacePermissionMiddleware('viewer'), asyncHandler(async (req, res) => {
-  const { workspaceId } = req.params;
-  const { status, assignee, priority, search } = req.query;
+router.get('/', asyncHandler(async (req, res) => {
+  const { workspaceId, status, assignee, priority, search } = req.query;
+
+  console.log('GET /api/tasks - Query params:', req.query);
+
+  if (!workspaceId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Workspace ID is required'
+    });
+  }
 
   const options = {};
   if (status) options.status = status;
@@ -60,7 +68,7 @@ router.get('/:id', taskPermissionMiddleware('viewer'), asyncHandler(async (req, 
 // @desc    Create task
 // @route   POST /api/tasks
 // @access  Private
-router.post('/', workspacePermissionMiddleware('member'), [
+router.post('/', [
   body('title')
     .trim()
     .isLength({ min: 1, max: 200 })
@@ -108,8 +116,25 @@ router.post('/', workspacePermissionMiddleware('member'), [
     });
   }
 
-  const { workspaceId } = req.params;
-  const workspace = req.workspace;
+  console.log('POST /api/tasks - Body:', req.body);
+
+  const { workspaceId } = req.body;
+  
+  if (!workspaceId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Workspace ID is required'
+    });
+  }
+
+  const workspace = await Workspace.findById(workspaceId);
+  
+  if (!workspace) {
+    return res.status(404).json({
+      success: false,
+      message: 'Workspace not found'
+    });
+  }
 
   // Get the highest position in the current status column
   const maxPosition = await Task.findOne({ 
@@ -238,7 +263,7 @@ router.put('/:id', taskPermissionMiddleware('member'), [
 // @desc    Delete task
 // @route   DELETE /api/tasks/:id
 // @access  Private
-router.delete('/:id', taskPermissionMiddleware('admin'), asyncHandler(async (req, res) => {
+router.delete('/:id', taskPermissionMiddleware('member'), asyncHandler(async (req, res) => {
   const task = await Task.findById(req.params.id);
 
   if (!task) {
