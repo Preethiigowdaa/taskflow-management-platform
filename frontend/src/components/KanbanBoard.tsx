@@ -1,31 +1,32 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { Plus, MoreVertical, Calendar, User, Tag, MessageCircle } from 'lucide-react'
+import { Plus, MoreVertical } from 'lucide-react'
 import TaskCard from './TaskCard'
 
-interface Task {
-  id: string
+// Simplified Task interface for Kanban board
+interface KanbanTask {
+  _id: string
   title: string
   description: string
   status: 'todo' | 'in-progress' | 'review' | 'done'
-  priority: 'low' | 'medium' | 'high'
-  assignee: {
-    id: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  assignee?: {
+    _id: string
     name: string
     avatar: string
   }
-  dueDate: string
+  dueDate?: string
   tags: string[]
-  comments: number
-  attachments: number
+  comments: any[]
+  attachments: any[]
 }
 
 interface Column {
   id: string
   title: string
   color: string
-  tasks: Task[]
+  tasks: KanbanTask[]
 }
 
 interface KanbanBoardProps {
@@ -37,22 +38,22 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ workspaceId }) => {
   const [isLoading, setIsLoading] = useState(true)
 
   // Mock data
-  const mockTasks: Task[] = [
+  const mockTasks: KanbanTask[] = [
     {
-      id: '1',
+      _id: '1',
       title: 'Design new landing page',
       description: 'Create a modern and responsive landing page design for the new product launch',
       status: 'todo',
       priority: 'high',
       assignee: {
-        id: '1',
+        _id: '1',
         name: 'Sarah Johnson',
         avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
       },
       dueDate: '2024-02-15',
       tags: ['Design', 'Frontend'],
-      comments: 3,
-      attachments: 2
+      comments: [],
+      attachments: []
     },
     {
       id: '2',
