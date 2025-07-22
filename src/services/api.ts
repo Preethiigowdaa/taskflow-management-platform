@@ -212,6 +212,77 @@ export interface AnalyticsData {
   }>;
 }
 
+export interface Goal {
+  _id: string;
+  title: string;
+  description: string;
+  target: number;
+  current: number;
+  unit: string;
+  deadline: string;
+  status: 'active' | 'completed' | 'overdue';
+  createdBy: User;
+  assignedTo: Array<{
+    user: User;
+    role: 'owner' | 'contributor' | 'viewer';
+  }>;
+  progressUpdates: Array<{
+    user: User;
+    value: number;
+    note: string;
+    updatedAt: string;
+  }>;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGoalData {
+  title: string;
+  description?: string;
+  target: number;
+  unit: string;
+  deadline: string;
+}
+
+export interface UpdateGoalData {
+  title?: string;
+  description?: string;
+  target?: number;
+  unit?: string;
+  deadline?: string;
+}
+
+export interface Activity {
+  _id: string;
+  workspace: string;
+  user: User;
+  type: string;
+  entity: {
+    type: string;
+    id: string;
+  };
+  metadata: {
+    title?: string;
+    description?: string;
+    oldValue?: any;
+    newValue?: any;
+    additionalInfo?: any;
+  };
+  message: string;
+  isPublic: boolean;
+  mentions: Array<{
+    user: User;
+    notified: boolean;
+  }>;
+  readBy: Array<{
+    user: User;
+    readAt: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API Service Class
 class ApiService {
   private api: any;
@@ -540,6 +611,82 @@ class ApiService {
     const response = await this.api.get(`/analytics/team/${workspaceId}`, {
       params: { period },
     });
+    return response.data;
+  }
+
+  // Analytics methods
+  async getAnalytics(workspaceId: string, timeRange: string = '30'): Promise<ApiResponse<any>> {
+    const response = await this.api.get(`/analytics?workspaceId=${workspaceId}&timeRange=${timeRange}`);
+    return response.data;
+  }
+
+  async getRealTimeMetrics(workspaceId: string): Promise<ApiResponse<any>> {
+    const response = await this.api.get(`/analytics/realtime?workspaceId=${workspaceId}`);
+    return response.data;
+  }
+
+  // Goal methods
+  async getGoals(workspaceId: string, status?: string): Promise<ApiResponse<Goal[]>> {
+    const params = new URLSearchParams({ workspaceId });
+    if (status) params.append('status', status);
+    const response = await this.api.get(`/goals?${params}`);
+    return response.data;
+  }
+
+  async getGoal(goalId: string): Promise<ApiResponse<Goal>> {
+    const response = await this.api.get(`/goals/${goalId}`);
+    return response.data;
+  }
+
+  async createGoal(data: CreateGoalData, workspaceId: string): Promise<ApiResponse<Goal>> {
+    const response = await this.api.post('/goals', { ...data, workspaceId });
+    return response.data;
+  }
+
+  async updateGoal(goalId: string, data: UpdateGoalData): Promise<ApiResponse<Goal>> {
+    const response = await this.api.put(`/goals/${goalId}`, data);
+    return response.data;
+  }
+
+  async updateGoalProgress(goalId: string, progress: number, note?: string): Promise<ApiResponse<Goal>> {
+    const response = await this.api.put(`/goals/${goalId}/progress`, { progress, note });
+    return response.data;
+  }
+
+  async deleteGoal(goalId: string): Promise<ApiResponse<void>> {
+    const response = await this.api.delete(`/goals/${goalId}`);
+    return response.data;
+  }
+
+  async getGoalStats(workspaceId: string): Promise<ApiResponse<any>> {
+    const response = await this.api.get(`/goals/stats?workspaceId=${workspaceId}`);
+    return response.data;
+  }
+
+  // Activity methods
+  async getActivities(workspaceId: string, limit: number = 50, offset: number = 0, type?: string): Promise<ApiResponse<Activity[]>> {
+    const params = new URLSearchParams({ 
+      workspaceId, 
+      limit: limit.toString(), 
+      offset: offset.toString() 
+    });
+    if (type) params.append('type', type);
+    const response = await this.api.get(`/activities?${params}`);
+    return response.data;
+  }
+
+  async getUserActivities(limit: number = 20, offset: number = 0): Promise<ApiResponse<Activity[]>> {
+    const response = await this.api.get(`/activities/user?limit=${limit}&offset=${offset}`);
+    return response.data;
+  }
+
+  async markActivityAsRead(activityId: string): Promise<ApiResponse<void>> {
+    const response = await this.api.put(`/activities/${activityId}/read`);
+    return response.data;
+  }
+
+  async getActivityStats(workspaceId: string, period: string = '7'): Promise<ApiResponse<any>> {
+    const response = await this.api.get(`/activities/stats?workspaceId=${workspaceId}&period=${period}`);
     return response.data;
   }
 

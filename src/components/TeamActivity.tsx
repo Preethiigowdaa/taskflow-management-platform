@@ -9,15 +9,23 @@ interface TeamActivityProps {
 
 interface ActivityItem {
   _id: string
-  type: 'task_created' | 'task_updated' | 'task_completed' | 'comment_added' | 'member_joined' | 'member_left'
+  type: 'task_created' | 'task_updated' | 'task_completed' | 'comment_added' | 'member_joined' | 'member_left' | 'goal_created' | 'goal_updated' | 'goal_completed' | 'workspace_created' | 'workspace_updated'
   user: {
     _id: string
     name: string
     avatar: string
   }
-  task?: {
-    _id: string
-    title: string
+  entity?: {
+    type: string
+    id: string
+    populatedId?: {
+      _id: string
+      title?: string
+      name?: string
+    }
+  }
+  metadata?: {
+    title?: string
   }
   message: string
   createdAt: string
@@ -34,66 +42,10 @@ const TeamActivity: React.FC<TeamActivityProps> = ({ workspaceId, onClose }) => 
   const loadActivities = async () => {
     try {
       setIsLoading(true)
-      // For now, we'll use mock data since the backend activity endpoint might not exist yet
-      const mockActivities: ActivityItem[] = [
-        {
-          _id: '1',
-          type: 'task_created',
-          user: {
-            _id: 'user1',
-            name: 'John Doe',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-          },
-          task: {
-            _id: 'task1',
-            title: 'Design new landing page'
-          },
-          message: 'created a new task',
-          createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 minutes ago
-        },
-        {
-          _id: '2',
-          type: 'task_completed',
-          user: {
-            _id: 'user2',
-            name: 'Jane Smith',
-            avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
-          },
-          task: {
-            _id: 'task2',
-            title: 'Review pull request'
-          },
-          message: 'completed a task',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() // 2 hours ago
-        },
-        {
-          _id: '3',
-          type: 'comment_added',
-          user: {
-            _id: 'user1',
-            name: 'John Doe',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-          },
-          task: {
-            _id: 'task3',
-            title: 'Update documentation'
-          },
-          message: 'added a comment',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString() // 4 hours ago
-        },
-        {
-          _id: '4',
-          type: 'member_joined',
-          user: {
-            _id: 'user3',
-            name: 'Mike Johnson',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-          },
-          message: 'joined the workspace',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
-        }
-      ]
-      setActivities(mockActivities)
+      const response = await apiService.getActivities(workspaceId, 50, 0)
+      if (response.success && response.data) {
+        setActivities(response.data as ActivityItem[])
+      }
     } catch (error) {
       console.error('Error loading activities:', error)
     } finally {
@@ -180,8 +132,8 @@ const TeamActivity: React.FC<TeamActivityProps> = ({ workspaceId, onClose }) => 
                       <span className="font-medium text-gray-900">{activity.user.name}</span>
                       {getActivityIcon(activity.type)}
                       <span className="text-gray-600">{activity.message}</span>
-                      {activity.task && (
-                        <span className="font-medium text-primary-600">"{activity.task.title}"</span>
+                      {(activity.entity?.populatedId?.title || activity.metadata?.title) && (
+                        <span className="font-medium text-primary-600">"{activity.entity?.populatedId?.title || activity.metadata?.title}"</span>
                       )}
                     </div>
                     <p className="text-sm text-gray-500 mt-1">

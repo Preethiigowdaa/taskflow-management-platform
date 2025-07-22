@@ -29,42 +29,24 @@ const RealTimeMetrics: React.FC<RealTimeMetricsProps> = ({ workspaceId }) => {
   const loadMetrics = async () => {
     try {
       setIsLoading(true)
-      // For now, we'll use mock data
-      const mockMetrics: Metric[] = [
-        {
-          label: 'Active Tasks',
-          value: 12,
-          change: 2,
-          changeType: 'positive',
-          icon: <Activity className="w-5 h-5" />,
-          color: 'text-blue-600'
-        },
-        {
-          label: 'Completed Today',
-          value: 8,
-          change: 3,
-          changeType: 'positive',
-          icon: <Target className="w-5 h-5" />,
-          color: 'text-green-600'
-        },
-        {
-          label: 'Team Members',
-          value: 5,
-          change: 1,
-          changeType: 'positive',
-          icon: <Users className="w-5 h-5" />,
-          color: 'text-purple-600'
-        },
-        {
-          label: 'Avg. Completion Time',
-          value: 4.2,
-          change: -0.5,
-          changeType: 'positive',
-          icon: <Clock className="w-5 h-5" />,
-          color: 'text-orange-600'
-        }
-      ]
-      setMetrics(mockMetrics)
+      const response = await apiService.getRealTimeMetrics(workspaceId)
+      if (response.success && response.data) {
+        const metrics: Metric[] = response.data.map((item: any) => ({
+          label: item.label,
+          value: item.value,
+          change: item.change,
+          changeType: item.changeType,
+          icon: item.label === 'Active Tasks' ? <Activity className="w-5 h-5" /> :
+                item.label === 'Completed Today' ? <Target className="w-5 h-5" /> :
+                item.label === 'Team Members' ? <Users className="w-5 h-5" /> :
+                <Clock className="w-5 h-5" />,
+          color: item.label === 'Active Tasks' ? 'text-blue-600' :
+                 item.label === 'Completed Today' ? 'text-green-600' :
+                 item.label === 'Team Members' ? 'text-purple-600' :
+                 'text-orange-600'
+        }))
+        setMetrics(metrics)
+      }
     } catch (error) {
       console.error('Error loading metrics:', error)
     } finally {

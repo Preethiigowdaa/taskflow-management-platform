@@ -278,13 +278,13 @@ const Dashboard = () => {
               </div>
             </motion.div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
               <TaskBoard workspaceId={selectedWorkspace || workspaces[0]?._id || ''} />
-            </motion.div>
+          </motion.div>
           )}
         </div>
       </div>

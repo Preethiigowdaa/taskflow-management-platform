@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('taskflow_token')
         localStorage.removeItem('taskflow_refresh_token')
       } finally {
-        setIsLoading(false)
+    setIsLoading(false)
       }
     }
 
@@ -121,7 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
-      setUser(null)
+    setUser(null)
     }
   }
 

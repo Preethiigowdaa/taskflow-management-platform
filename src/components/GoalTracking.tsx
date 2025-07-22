@@ -39,43 +39,10 @@ const GoalTracking: React.FC<GoalTrackingProps> = ({ workspaceId, onClose }) => 
   const loadGoals = async () => {
     try {
       setIsLoading(true)
-      // Mock data for now
-      const mockGoals: Goal[] = [
-        {
-          _id: '1',
-          title: 'Complete 50 tasks this month',
-          description: 'Increase team productivity by completing 50 tasks',
-          target: 50,
-          current: 32,
-          unit: 'tasks',
-          deadline: '2025-08-20',
-          status: 'active',
-          createdAt: '2025-07-20'
-        },
-        {
-          _id: '2',
-          title: 'Reduce average completion time',
-          description: 'Improve efficiency by reducing task completion time',
-          target: 3,
-          current: 4.2,
-          unit: 'days',
-          deadline: '2025-08-15',
-          status: 'active',
-          createdAt: '2025-07-20'
-        },
-        {
-          _id: '3',
-          title: 'Onboard 3 new team members',
-          description: 'Expand the team by adding 3 new members',
-          target: 3,
-          current: 1,
-          unit: 'members',
-          deadline: '2025-08-30',
-          status: 'active',
-          createdAt: '2025-07-20'
-        }
-      ]
-      setGoals(mockGoals)
+      const response = await apiService.getGoals(workspaceId)
+      if (response.success && response.data) {
+        setGoals(response.data)
+      }
     } catch (error) {
       console.error('Error loading goals:', error)
     } finally {
@@ -86,17 +53,12 @@ const GoalTracking: React.FC<GoalTrackingProps> = ({ workspaceId, onClose }) => 
   const handleAddGoal = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      // Mock API call
-      const newGoal: Goal = {
-        _id: Date.now().toString(),
-        ...formData,
-        current: 0,
-        status: 'active',
-        createdAt: new Date().toISOString()
+      const response = await apiService.createGoal(formData, workspaceId)
+      if (response.success && response.data) {
+        setGoals(prev => [...prev, response.data as Goal])
+        setFormData({ title: '', description: '', target: 0, unit: 'tasks', deadline: '' })
+        setShowAddGoal(false)
       }
-      setGoals(prev => [...prev, newGoal])
-      setFormData({ title: '', description: '', target: 0, unit: 'tasks', deadline: '' })
-      setShowAddGoal(false)
     } catch (error) {
       console.error('Error adding goal:', error)
     }
@@ -104,11 +66,14 @@ const GoalTracking: React.FC<GoalTrackingProps> = ({ workspaceId, onClose }) => 
 
   const handleUpdateProgress = async (goalId: string, newProgress: number) => {
     try {
-      setGoals(prev => prev.map(goal => 
-        goal._id === goalId 
-          ? { ...goal, current: newProgress }
-          : goal
-      ))
+      const response = await apiService.updateGoalProgress(goalId, newProgress)
+      if (response.success && response.data) {
+        setGoals(prev => prev.map(goal => 
+          goal._id === goalId 
+            ? response.data as Goal
+            : goal
+        ))
+      }
     } catch (error) {
       console.error('Error updating progress:', error)
     }
@@ -118,7 +83,10 @@ const GoalTracking: React.FC<GoalTrackingProps> = ({ workspaceId, onClose }) => 
     if (!confirm('Are you sure you want to delete this goal?')) return
     
     try {
-      setGoals(prev => prev.filter(goal => goal._id !== goalId))
+      const response = await apiService.deleteGoal(goalId)
+      if (response.success) {
+        setGoals(prev => prev.filter(goal => goal._id !== goalId))
+      }
     } catch (error) {
       console.error('Error deleting goal:', error)
     }

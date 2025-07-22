@@ -12,6 +12,8 @@ const userRoutes = require('./routes/users');
 const workspaceRoutes = require('./routes/workspaces');
 const taskRoutes = require('./routes/tasks');
 const analyticsRoutes = require('./routes/analytics');
+const goalRoutes = require('./routes/goals');
+const activityRoutes = require('./routes/activities');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -58,6 +60,8 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/workspaces', authMiddleware, workspaceRoutes);
 app.use('/api/tasks', authMiddleware, taskRoutes);
 app.use('/api/analytics', authMiddleware, analyticsRoutes);
+app.use('/api/goals', authMiddleware, goalRoutes);
+app.use('/api/activities', authMiddleware, activityRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

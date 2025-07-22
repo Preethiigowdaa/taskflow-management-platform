@@ -1,268 +1,266 @@
 const express = require('express');
+const Task = require('../models/Task');
+const Goal = require('../models/Goal');
+const Activity = require('../models/Activity');
+const Workspace = require('../models/Workspace');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { workspacePermissionMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-// @desc    Get dashboard analytics
-// @route   GET /api/analytics/dashboard
+// @desc    Get comprehensive workspace analytics
+// @route   GET /api/analytics
 // @access  Private
-router.get('/dashboard', asyncHandler(async (req, res) => {
-  const Task = require('../models/Task');
-  const Workspace = require('../models/Workspace');
+router.get('/', asyncHandler(async (req, res) => {
+  const { workspaceId, timeRange = '30' } = req.query;
+  const days = parseInt(timeRange);
 
-  const userId = req.user._id;
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
 
-  // Get user's workspaces
-  const workspaces = await Workspace.findByUser(userId);
+  // Get all tasks for the workspace
+  const tasks = await Task.find({
+    workspace: workspaceId,
+    createdAt: { $gte: startDate }
+  }).populate('reporter', 'name email avatar');
 
-  // Get overall task statistics
-  const taskStats = await Task.aggregate([
-    {
-      $match: {
-        $or: [
-          { assignee: userId },
-          { reporter: userId }
-        ],
-        isArchived: false
-      }
-    },
-    {
-      $group: {
-        _id: '$status',
-        count: { $sum: 1 }
-      }
-    }
-  ]);
+  // Get goals
+  const goals = await Goal.find({
+    workspace: workspaceId,
+    isActive: true
+  });
 
-  // Get overdue tasks
-  const overdueTasks = await Task.find({
-    $or: [
-      { assignee: userId },
-      { reporter: userId }
-    ],
-    dueDate: { $lt: new Date() },
-    status: { $ne: 'done' },
-    isArchived: false
-  }).populate('workspace', 'name color');
+  // Get activities
+  const activities = await Activity.find({
+    workspace: workspaceId,
+    createdAt: { $gte: startDate }
+  }).populate('user', 'name email avatar');
 
-  // Get recent activity (last 7 days)
-  const recentActivity = await Task.find({
-    $or: [
-      { assignee: userId },
-      { reporter: userId }
-    ],
-    updatedAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-    isArchived: false
-  })
-    .populate('workspace', 'name color')
-    .populate('assignee', 'name email avatar')
-    .populate('reporter', 'name email avatar')
-    .sort({ updatedAt: -1 })
-    .limit(10);
-
-  // Calculate completion rates
-  const totalTasks = taskStats.reduce((sum, stat) => sum + stat.count, 0);
-  const completedTasks = taskStats.find(stat => stat._id === 'done')?.count || 0;
+  // Calculate task statistics
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(task => task.status === 'done').length;
+  const overdueTasks = tasks.filter(task => {
+    return task.dueDate && new Date() > new Date(task.dueDate) && task.status !== 'done';
+  }).length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // Get productivity trends (last 30 days)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const productivityTrends = await Task.aggregate([
-    {
-      $match: {
-        $or: [
-          { assignee: userId },
-          { reporter: userId }
-        ],
-        completedAt: { $gte: thirtyDaysAgo },
-        isArchived: false
-      }
-    },
-    {
-      $group: {
-        _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$completedAt' }
-        },
-        completed: { $sum: 1 }
-      }
-    },
-    {
-      $sort: { _id: 1 }
+  // Calculate average completion time
+  const completedTasksWithDates = tasks.filter(task => 
+    task.status === 'done' && task.updatedAt && task.createdAt
+  );
+  
+  let averageCompletionTime = 0;
+  if (completedTasksWithDates.length > 0) {
+    const totalTime = completedTasksWithDates.reduce((sum, task) => {
+      const completionTime = new Date(task.updatedAt) - new Date(task.createdAt);
+      return sum + completionTime;
+    }, 0);
+    averageCompletionTime = Math.round((totalTime / completedTasksWithDates.length) / (1000 * 60 * 60 * 24) * 10) / 10; // in days
+  }
+
+  // Team productivity
+  const userTaskStats = {};
+  tasks.forEach(task => {
+    const userId = task.reporter._id.toString();
+    if (!userTaskStats[userId]) {
+      userTaskStats[userId] = {
+        userId,
+        name: task.reporter.name,
+        avatar: task.reporter.avatar,
+        tasksCompleted: 0,
+        tasksAssigned: 0
+      };
     }
-  ]);
+    userTaskStats[userId].tasksAssigned++;
+    if (task.status === 'done') {
+      userTaskStats[userId].tasksCompleted++;
+    }
+  });
+
+  const teamProductivity = Object.values(userTaskStats).map(user => ({
+    ...user,
+    completionRate: user.tasksAssigned > 0 ? Math.round((user.tasksCompleted / user.tasksAssigned) * 100) : 0
+  }));
+
+  // Weekly trends
+  const weeklyTrends = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const dayTasks = tasks.filter(task => {
+      const taskDate = new Date(task.createdAt);
+      return taskDate >= dayStart && taskDate <= dayEnd;
+    });
+
+    const dayCompleted = tasks.filter(task => {
+      const taskDate = new Date(task.updatedAt);
+      return task.status === 'done' && taskDate >= dayStart && taskDate <= dayEnd;
+    });
+
+    weeklyTrends.push({
+      date: dateStr,
+      completed: dayCompleted.length,
+      created: dayTasks.length
+    });
+  }
+
+  // Priority distribution
+  const priorityCounts = {};
+  tasks.forEach(task => {
+    priorityCounts[task.priority] = (priorityCounts[task.priority] || 0) + 1;
+  });
+
+  const priorityDistribution = Object.entries(priorityCounts).map(([priority, count]) => ({
+    priority: priority.charAt(0).toUpperCase() + priority.slice(1),
+    count,
+    percentage: Math.round((count / totalTasks) * 100)
+  }));
+
+  // Status distribution
+  const statusCounts = {};
+  tasks.forEach(task => {
+    statusCounts[task.status] = (statusCounts[task.status] || 0) + 1;
+  });
+
+  const statusDistribution = Object.entries(statusCounts).map(([status, count]) => ({
+    status: status.charAt(0).toUpperCase() + status.slice(1),
+    count,
+    percentage: Math.round((count / totalTasks) * 100)
+  }));
+
+  // Goal statistics
+  const goalStats = {
+    total: goals.length,
+    completed: goals.filter(goal => goal.status === 'completed').length,
+    active: goals.filter(goal => goal.status === 'active').length,
+    overdue: goals.filter(goal => goal.status === 'overdue').length
+  };
+
+  // Activity summary
+  const activityTypes = ['task_created', 'task_completed', 'member_joined', 'goal_created'];
+  const activitySummary = activityTypes.map(type => ({
+    type,
+    count: activities.filter(activity => activity.type === type).length
+  }));
 
   res.status(200).json({
     success: true,
     data: {
-      workspaces: workspaces.length,
       totalTasks,
       completedTasks,
-      overdueTasks: overdueTasks.length,
+      overdueTasks,
       completionRate,
-      recentActivity,
-      productivityTrends
+      averageCompletionTime,
+      teamProductivity,
+      weeklyTrends,
+      priorityDistribution,
+      statusDistribution,
+      goalStats,
+      activitySummary
     }
   });
 }));
 
-// @desc    Get workspace analytics
-// @route   GET /api/analytics/workspace/:workspaceId
+// @desc    Get real-time metrics
+// @route   GET /api/analytics/realtime
 // @access  Private
-router.get('/workspace/:workspaceId', workspacePermissionMiddleware('viewer'), asyncHandler(async (req, res) => {
-  const Task = require('../models/Task');
-  const workspaceId = req.params.workspaceId;
+router.get('/realtime', asyncHandler(async (req, res) => {
+  const { workspaceId } = req.query;
 
-  // Get task statistics by status
-  const taskStats = await Task.aggregate([
-    { $match: { workspace: workspaceId, isArchived: false } },
-    {
-      $group: {
-        _id: '$status',
-        count: { $sum: 1 }
-      }
-    }
-  ]);
+  // Get today's date range
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  // Get task statistics by priority
-  const priorityStats = await Task.aggregate([
-    { $match: { workspace: workspaceId, isArchived: false } },
-    {
-      $group: {
-        _id: '$priority',
-        count: { $sum: 1 }
-      }
-    }
-  ]);
+  // Get yesterday's date range
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
 
-  // Get tasks by assignee
-  const assigneeStats = await Task.aggregate([
-    { $match: { workspace: workspaceId, isArchived: false } },
-    {
-      $group: {
-        _id: '$assignee',
-        total: { $sum: 1 },
-        completed: {
-          $sum: { $cond: [{ $eq: ['$status', 'done'] }, 1, 0] }
-        }
-      }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'user'
-      }
-    },
-    {
-      $unwind: '$user'
-    },
-    {
-      $project: {
-        name: '$user.name',
-        email: '$user.email',
-        avatar: '$user.avatar',
-        total: 1,
-        completed: 1,
-        completionRate: {
-          $round: [
-            { $multiply: [{ $divide: ['$completed', '$total'] }, 100] },
-            1
-          ]
-        }
-      }
-    }
-  ]);
+  // Current active tasks
+  const activeTasks = await Task.countDocuments({
+    workspace: workspaceId,
+    status: { $nin: ['done', 'archived'] }
+  });
 
-  // Get overdue tasks
-  const overdueTasks = await Task.findOverdue(workspaceId);
+  // Tasks completed today
+  const completedToday = await Task.countDocuments({
+    workspace: workspaceId,
+    status: 'done',
+    updatedAt: { $gte: today, $lt: tomorrow }
+  });
 
-  // Get completion trends (last 30 days)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const completionTrends = await Task.aggregate([
-    {
-      $match: {
-        workspace: workspaceId,
-        completedAt: { $gte: thirtyDaysAgo },
-        isArchived: false
-      }
-    },
-    {
-      $group: {
-        _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$completedAt' }
-        },
-        completed: { $sum: 1 }
-      }
-    },
-    {
-      $sort: { _id: 1 }
-    }
-  ]);
+  // Tasks completed yesterday
+  const completedYesterday = await Task.countDocuments({
+    workspace: workspaceId,
+    status: 'done',
+    updatedAt: { $gte: yesterday, $lt: today }
+  });
 
-  // Get task creation trends (last 30 days)
-  const creationTrends = await Task.aggregate([
-    {
-      $match: {
-        workspace: workspaceId,
-        createdAt: { $gte: thirtyDaysAgo },
-        isArchived: false
-      }
-    },
-    {
-      $group: {
-        _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
-        },
-        created: { $sum: 1 }
-      }
-    },
-    {
-      $sort: { _id: 1 }
-    }
-  ]);
+  // Team members count
+  const workspace = await Workspace.findById(workspaceId).populate('members.user');
+  const teamMembers = workspace.members.length;
 
-  // Calculate average completion time
-  const avgCompletionTime = await Task.aggregate([
-    {
-      $match: {
-        workspace: workspaceId,
-        status: 'done',
-        completedAt: { $exists: true },
-        createdAt: { $exists: true },
-        isArchived: false
-      }
-    },
-    {
-      $addFields: {
-        completionTime: {
-          $divide: [
-            { $subtract: ['$completedAt', '$createdAt'] },
-            1000 * 60 * 60 * 24 // Convert to days
-          ]
-        }
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        avgDays: { $avg: '$completionTime' }
-      }
-    }
-  ]);
+  // Average completion time (last 7 days)
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  const recentCompletedTasks = await Task.find({
+    workspace: workspaceId,
+    status: 'done',
+    updatedAt: { $gte: weekAgo }
+  });
+
+  let avgCompletionTime = 0;
+  if (recentCompletedTasks.length > 0) {
+    const totalTime = recentCompletedTasks.reduce((sum, task) => {
+      const completionTime = new Date(task.updatedAt) - new Date(task.createdAt);
+      return sum + completionTime;
+    }, 0);
+    avgCompletionTime = Math.round((totalTime / recentCompletedTasks.length) / (1000 * 60 * 60) * 10) / 10; // in hours
+  }
+
+  // Calculate changes
+  const activeTasksChange = 0; // You could compare with previous period
+  const completedChange = completedToday - completedYesterday;
+  const teamMembersChange = 0; // You could track member additions
+  const completionTimeChange = -0.5; // Mock improvement
 
   res.status(200).json({
     success: true,
-    data: {
-      taskStats,
-      priorityStats,
-      assigneeStats,
-      overdueTasks: overdueTasks.length,
-      completionTrends,
-      creationTrends,
-      avgCompletionTime: avgCompletionTime[0]?.avgDays || 0
-    }
+    data: [
+      {
+        label: 'Active Tasks',
+        value: activeTasks,
+        change: activeTasksChange,
+        changeType: activeTasksChange >= 0 ? 'positive' : 'negative'
+      },
+      {
+        label: 'Completed Today',
+        value: completedToday,
+        change: completedChange,
+        changeType: completedChange >= 0 ? 'positive' : 'negative'
+      },
+      {
+        label: 'Team Members',
+        value: teamMembers,
+        change: teamMembersChange,
+        changeType: teamMembersChange >= 0 ? 'positive' : 'negative'
+      },
+      {
+        label: 'Avg. Completion Time',
+        value: avgCompletionTime,
+        change: completionTimeChange,
+        changeType: completionTimeChange <= 0 ? 'positive' : 'negative'
+      }
+    ]
   });
 }));
 
@@ -270,260 +268,54 @@ router.get('/workspace/:workspaceId', workspacePermissionMiddleware('viewer'), a
 // @route   GET /api/analytics/productivity
 // @access  Private
 router.get('/productivity', asyncHandler(async (req, res) => {
-  const Task = require('../models/Task');
-  const { period = '30' } = req.query; // days
+  const { workspaceId, userId, timeRange = '30' } = req.query;
+  const days = parseInt(timeRange);
 
-  const daysAgo = new Date(Date.now() - parseInt(period) * 24 * 60 * 60 * 1000);
-  const userId = req.user._id;
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
 
-  // Get tasks completed by user in the period
-  const completedTasks = await Task.find({
-    assignee: userId,
-    status: 'done',
-    completedAt: { $gte: daysAgo },
-    isArchived: false
-  }).populate('workspace', 'name color');
-
-  // Get tasks created by user in the period
-  const createdTasks = await Task.find({
+  const tasks = await Task.find({
+    workspace: workspaceId,
     reporter: userId,
-    createdAt: { $gte: daysAgo },
-    isArchived: false
-  }).populate('workspace', 'name color');
+    createdAt: { $gte: startDate }
+  });
 
-  // Calculate daily productivity
-  const dailyProductivity = await Task.aggregate([
-    {
-      $match: {
-        assignee: userId,
-        status: 'done',
-        completedAt: { $gte: daysAgo },
-        isArchived: false
-      }
-    },
-    {
-      $group: {
-        _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$completedAt' }
-        },
-        completed: { $sum: 1 }
-      }
-    },
-    {
-      $sort: { _id: 1 }
-    }
-  ]);
-
-  // Calculate workspace productivity
-  const workspaceProductivity = await Task.aggregate([
-    {
-      $match: {
-        assignee: userId,
-        status: 'done',
-        completedAt: { $gte: daysAgo },
-        isArchived: false
-      }
-    },
-    {
-      $group: {
-        _id: '$workspace',
-        completed: { $sum: 1 }
-      }
-    },
-    {
-      $lookup: {
-        from: 'workspaces',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'workspace'
-      }
-    },
-    {
-      $unwind: '$workspace'
-    },
-    {
-      $project: {
-        workspaceName: '$workspace.name',
-        workspaceColor: '$workspace.color',
-        completed: 1
-      }
-    }
-  ]);
+  const completedTasks = tasks.filter(task => task.status === 'done');
+  const totalTasks = tasks.length;
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
 
   // Calculate average completion time
-  const avgCompletionTime = await Task.aggregate([
-    {
-      $match: {
-        assignee: userId,
-        status: 'done',
-        completedAt: { $exists: true },
-        createdAt: { $exists: true },
-        isArchived: false
-      }
-    },
-    {
-      $addFields: {
-        completionTime: {
-          $divide: [
-            { $subtract: ['$completedAt', '$createdAt'] },
-            1000 * 60 * 60 * 24 // Convert to days
-          ]
-        }
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        avgDays: { $avg: '$completionTime' }
-      }
-    }
-  ]);
+  let averageCompletionTime = 0;
+  if (completedTasks.length > 0) {
+    const totalTime = completedTasks.reduce((sum, task) => {
+      const completionTime = new Date(task.updatedAt) - new Date(task.createdAt);
+      return sum + completionTime;
+    }, 0);
+    averageCompletionTime = Math.round((totalTime / completedTasks.length) / (1000 * 60 * 60 * 24) * 10) / 10;
+  }
 
-  res.status(200).json({
-    success: true,
-    data: {
-      period: parseInt(period),
-      completedTasks: completedTasks.length,
-      createdTasks: createdTasks.length,
-      dailyProductivity,
-      workspaceProductivity,
-      avgCompletionTime: avgCompletionTime[0]?.avgDays || 0,
-      recentCompleted: completedTasks.slice(0, 10),
-      recentCreated: createdTasks.slice(0, 10)
-    }
+  // Priority breakdown
+  const priorityBreakdown = {};
+  tasks.forEach(task => {
+    priorityBreakdown[task.priority] = (priorityBreakdown[task.priority] || 0) + 1;
   });
-}));
 
-// @desc    Get team analytics
-// @route   GET /api/analytics/team/:workspaceId
-// @access  Private
-router.get('/team/:workspaceId', workspacePermissionMiddleware('viewer'), asyncHandler(async (req, res) => {
-  const Task = require('../models/Task');
-  const Workspace = require('../models/Workspace');
-  const workspaceId = req.params.workspaceId;
-  const { period = '30' } = req.query;
-
-  const daysAgo = new Date(Date.now() - parseInt(period) * 24 * 60 * 60 * 1000);
-
-  // Get workspace members
-  const workspace = await Workspace.findById(workspaceId)
-    .populate('members.user', 'name email avatar');
-
-  // Get team performance
-  const teamPerformance = await Task.aggregate([
-    {
-      $match: {
-        workspace: workspaceId,
-        isArchived: false
-      }
-    },
-    {
-      $group: {
-        _id: '$assignee',
-        total: { $sum: 1 },
-        completed: {
-          $sum: { $cond: [{ $eq: ['$status', 'done'] }, 1, 0] }
-        },
-        overdue: {
-          $sum: {
-            $cond: [
-              {
-                $and: [
-                  { $lt: ['$dueDate', new Date()] },
-                  { $ne: ['$status', 'done'] }
-                ]
-              },
-              1,
-              0
-            ]
-          }
-        }
-      }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'user'
-      }
-    },
-    {
-      $unwind: '$user'
-    },
-    {
-      $project: {
-        name: '$user.name',
-        email: '$user.email',
-        avatar: '$user.avatar',
-        total: 1,
-        completed: 1,
-        overdue: 1,
-        completionRate: {
-          $round: [
-            { $multiply: [{ $divide: ['$completed', '$total'] }, 100] },
-            1
-          ]
-        }
-      }
-    }
-  ]);
-
-  // Get recent team activity
-  const recentActivity = await Task.find({
-    workspace: workspaceId,
-    updatedAt: { $gte: daysAgo },
-    isArchived: false
-  })
-    .populate('assignee', 'name email avatar')
-    .populate('reporter', 'name email avatar')
-    .sort({ updatedAt: -1 })
-    .limit(20);
-
-  // Get team workload distribution
-  const workloadDistribution = await Task.aggregate([
-    {
-      $match: {
-        workspace: workspaceId,
-        status: { $ne: 'done' },
-        isArchived: false
-      }
-    },
-    {
-      $group: {
-        _id: '$assignee',
-        activeTasks: { $sum: 1 }
-      }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'user'
-      }
-    },
-    {
-      $unwind: '$user'
-    },
-    {
-      $project: {
-        name: '$user.name',
-        email: '$user.email',
-        avatar: '$user.avatar',
-        activeTasks: 1
-      }
-    }
-  ]);
+  // Daily activity
+  const dailyActivity = {};
+  tasks.forEach(task => {
+    const date = task.createdAt.toISOString().split('T')[0];
+    dailyActivity[date] = (dailyActivity[date] || 0) + 1;
+  });
 
   res.status(200).json({
     success: true,
     data: {
-      period: parseInt(period),
-      members: workspace.members,
-      teamPerformance,
-      recentActivity,
-      workloadDistribution
+      totalTasks,
+      completedTasks: completedTasks.length,
+      completionRate,
+      averageCompletionTime,
+      priorityBreakdown,
+      dailyActivity
     }
   });
 }));

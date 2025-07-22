@@ -51,61 +51,10 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ workspace, onCl
   const loadAnalytics = async () => {
     try {
       setIsLoading(true)
-      // For now, we'll use mock data since the backend analytics endpoint might not exist yet
-      const mockAnalytics: AnalyticsData = {
-        totalTasks: 24,
-        completedTasks: 18,
-        overdueTasks: 3,
-        completionRate: 75,
-        averageCompletionTime: 4.2,
-        teamProductivity: [
-          {
-            userId: 'user1',
-            name: 'John Doe',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-            tasksCompleted: 8,
-            tasksAssigned: 10,
-            completionRate: 80
-          },
-          {
-            userId: 'user2',
-            name: 'Jane Smith',
-            avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-            tasksCompleted: 6,
-            tasksAssigned: 8,
-            completionRate: 75
-          },
-          {
-            userId: 'user3',
-            name: 'Mike Johnson',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-            tasksCompleted: 4,
-            tasksAssigned: 6,
-            completionRate: 67
-          }
-        ],
-        weeklyTrends: [
-          { date: '2025-07-14', completed: 5, created: 8 },
-          { date: '2025-07-15', completed: 3, created: 6 },
-          { date: '2025-07-16', completed: 7, created: 4 },
-          { date: '2025-07-17', completed: 4, created: 7 },
-          { date: '2025-07-18', completed: 6, created: 5 },
-          { date: '2025-07-19', completed: 8, created: 3 },
-          { date: '2025-07-20', completed: 5, created: 6 }
-        ],
-        priorityDistribution: [
-          { priority: 'High', count: 8, percentage: 33 },
-          { priority: 'Medium', count: 12, percentage: 50 },
-          { priority: 'Low', count: 4, percentage: 17 }
-        ],
-        statusDistribution: [
-          { status: 'Done', count: 18, percentage: 75 },
-          { status: 'In Progress', count: 4, percentage: 17 },
-          { status: 'Review', count: 1, percentage: 4 },
-          { status: 'To Do', count: 1, percentage: 4 }
-        ]
+      const response = await apiService.getAnalytics(workspace._id, timeRange)
+      if (response.success && response.data) {
+        setAnalytics(response.data)
       }
-      setAnalytics(mockAnalytics)
     } catch (error) {
       console.error('Error loading analytics:', error)
     } finally {
