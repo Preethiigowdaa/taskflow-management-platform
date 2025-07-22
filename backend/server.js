@@ -78,15 +78,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('public'));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
-  });
-}
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -97,11 +88,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: 'API route not found'
   });
 });
 
@@ -110,9 +101,13 @@ const PORT = process.env.PORT || 5000;
 // Start server
 const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
   });
+  
+  // Set timeout values for Render
+  server.keepAliveTimeout = 120000; // 2 minutes
+  server.headersTimeout = 120000; // 2 minutes
 };
 
 startServer();

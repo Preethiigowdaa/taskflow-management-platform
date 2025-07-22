@@ -49,7 +49,7 @@ This guide will help you deploy your TaskFlow application for free on Render. Th
 5. Replace `<password>` with your database user password
 6. Replace `<dbname>` with `taskflow`
 
-**Example connection string:**
+**Example connection string (replace with your actual credentials):**
 ```
 mongodb+srv://yourusername:yourpassword@cluster0.xxxxx.mongodb.net/taskflow?retryWrites=true&w=majority
 ```
