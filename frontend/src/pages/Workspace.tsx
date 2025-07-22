@@ -6,13 +6,11 @@ import {
   Settings,
   Users,
   Calendar,
-  FileText,
   Plus,
-  Search,
-  Filter
+  Search
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import apiService, { Workspace as ApiWorkspace } from '../services/api'
+
 import TaskBoard from '../components/TaskBoard'
 
 interface WorkspaceData {

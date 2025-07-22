@@ -93,7 +93,6 @@ userSchema.virtual('fullName').get(function() {
 });
 
 // Index for better query performance
-userSchema.index({ email: 1 });
 userSchema.index({ 'workspaces.workspace': 1 });
 
 // Pre-save middleware to hash password

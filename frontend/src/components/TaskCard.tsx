@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { MoreVertical, Calendar, User, Tag, MessageCircle, CheckSquare, Clock } from 'lucide-react'
 import { Task } from '../services/api'
-import { useAuth } from '../contexts/AuthContext'
+
 
 interface TaskCardProps {
   task: Task
@@ -12,7 +12,6 @@ interface TaskCardProps {
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onUpdate, onEdit }) => {
   const [showMenu, setShowMenu] = useState(false)
-  const { user } = useAuth()
 
   const priorityColors = {
     low: 'bg-gray-100 text-gray-700',

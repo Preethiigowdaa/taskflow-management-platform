@@ -4,9 +4,12 @@ const Goal = require('../models/Goal');
 const Activity = require('../models/Activity');
 const Workspace = require('../models/Workspace');
 const { asyncHandler } = require('../middleware/errorHandler');
-const { workspacePermissionMiddleware } = require('../middleware/auth');
+const { authMiddleware, workspacePermissionMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Apply auth middleware to all routes
+router.use(authMiddleware);
 
 // @desc    Get comprehensive workspace analytics
 // @route   GET /api/analytics

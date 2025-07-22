@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Activity, User, Plus, Edit, Trash2, CheckCircle, Clock, MessageCircle, Calendar, X } from 'lucide-react'
+import { Activity, User, Plus, Edit, CheckCircle, MessageCircle, X } from 'lucide-react'
 import apiService from '../services/api'
 
 interface TeamActivityProps {

@@ -1,37 +1,33 @@
-# TaskFlow - Modern Task Management Platform
+# 🚀 TaskFlow - Task Management Platform
 
-A comprehensive project management tool with real-time collaboration, drag-and-drop functionality, team workspaces, and advanced filtering. Think Trello meets Notion.
-
-![TaskFlow Platform](https://img.shields.io/badge/React-18.2.0-blue?style=for-the-badge&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0.2-blue?style=for-the-badge&logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3.3-38B2AC?style=for-the-badge&logo=tailwind-css)
-![Vite](https://img.shields.io/badge/Vite-4.4.5-646CFF?style=for-the-badge&logo=vite)
+A comprehensive project management tool with real-time collaboration, drag-and-drop functionality, team workspaces, and advanced filtering.
 
 ## ✨ Features
 
-### 🎯 Core Functionality
-- **User Authentication & Team Workspaces** - Secure login/signup with team collaboration
-- **Drag-and-Drop Task Boards** - Intuitive Kanban-style task management
-- **Real-time Collaboration** - Work together seamlessly with your team
-- **Task Assignments & Due Dates** - Assign tasks and set priorities
-- **File Attachments & Comments** - Rich task context with files and discussions
-- **Advanced Filtering & Search** - Find tasks quickly with powerful filters
-- **Dashboard Analytics** - Track progress and team performance
-- **Responsive Design** - Works perfectly on all devices
+- **📋 Task Management**: Create, edit, and organize tasks with drag-and-drop
+- **👥 Team Collaboration**: Real-time updates and team workspaces
+- **📊 Analytics Dashboard**: Track progress and productivity metrics
+- **🎯 Goal Tracking**: Set and monitor team goals
+- **🔍 Advanced Filtering**: Search and filter tasks by various criteria
+- **📱 Responsive Design**: Works on desktop, tablet, and mobile
+- **🔐 Secure Authentication**: JWT-based authentication system
 
-### 🎨 Design & UX
-- **Professional UI/UX** - Apple-level design aesthetics
-- **Smooth Animations** - Framer Motion for engaging interactions
-- **Modern Tech Stack** - React, TypeScript, Tailwind CSS
-- **Component Architecture** - Clean, maintainable code structure
+## 🛠️ Tech Stack
+
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Framer Motion
+- **Backend**: Node.js, Express.js, MongoDB, Mongoose
+- **Authentication**: JWT tokens
+- **Database**: MongoDB Atlas
+- **Deployment**: Render (Free tier)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 16+ 
-- npm or yarn
+- Node.js 18+ 
+- MongoDB Atlas account (free)
+- Git
 
-### Installation
+### Local Development
 
 1. **Clone the repository**
    ```bash
@@ -41,153 +37,145 @@ A comprehensive project management tool with real-time collaboration, drag-and-d
 
 2. **Install dependencies**
    ```bash
-   npm install
+   npm run install:all
    ```
 
-3. **Start the development server**
+3. **Set up environment variables**
+   ```bash
+   # Copy example files
+   cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
+   
+   # Edit backend/.env with your MongoDB connection string
+   ```
+
+4. **Start development servers**
    ```bash
    npm run dev
    ```
 
-4. **Open your browser**
-   Navigate to `http://localhost:3000`
+5. **Open your browser**
+   - Frontend: http://localhost:3000
+   - Backend: http://localhost:5000
+
+## 🌐 Deployment
+
+### Free Deployment on Render
+
+This app is configured for free deployment on Render. Follow these steps:
+
+1. **Set up MongoDB Atlas** (Free database)
+   - Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
+   - Create a free account and cluster
+   - Get your connection string
+
+2. **Deploy to Render**
+   - Go to [Render](https://render.com)
+   - Sign up with GitHub
+   - Connect your repository
+   - Deploy both backend and frontend services
+
+3. **Configure Environment Variables**
+   - Add your MongoDB connection string
+   - Set JWT secrets
+   - Update frontend API URL
+
+📖 **Detailed deployment guide**: [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+### Deployment URLs
+After deployment, your app will be available at:
+- **Frontend**: `https://taskflow-frontend.onrender.com`
+- **Backend**: `https://taskflow-backend.onrender.com`
 
 ## 📁 Project Structure
 
 ```
 taskflow-management-platform/
-├── src/
-│   ├── components/          # Reusable UI components
-│   │   ├── AnalyticsCard.tsx
-│   │   ├── KanbanBoard.tsx
-│   │   └── TaskCard.tsx
-│   ├── contexts/           # React contexts
-│   │   └── AuthContext.tsx
-│   ├── pages/             # Page components
-│   │   ├── Dashboard.tsx
-│   │   ├── LandingPage.tsx
-│   │   ├── LoginPage.tsx
-│   │   ├── SignupPage.tsx
-│   │   └── Workspace.tsx
-│   ├── App.tsx            # Main app component
-│   ├── main.tsx           # App entry point
-│   └── index.css          # Global styles
-├── public/                # Static assets
-├── package.json           # Dependencies and scripts
-├── tailwind.config.js     # Tailwind configuration
-├── vite.config.ts         # Vite configuration
-└── README.md             # Project documentation
+├── backend/                 # Node.js/Express API
+│   ├── models/             # MongoDB schemas
+│   ├── routes/             # API endpoints
+│   ├── middleware/         # Authentication & validation
+│   ├── scripts/            # Database seeding
+│   └── server.js           # Main server file
+├── frontend/               # React/Vite application
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API service
+│   │   └── contexts/       # React contexts
+│   ├── public/             # Static assets
+│   └── index.html          # Entry point
+├── render.yaml             # Render deployment config
+└── DEPLOYMENT.md           # Detailed deployment guide
 ```
 
-## 🛠️ Tech Stack
+## 🔧 Available Scripts
 
-- **Frontend Framework**: React 18.2.0
-- **Language**: TypeScript 5.0.2
-- **Build Tool**: Vite 4.4.5
-- **Styling**: Tailwind CSS 3.3.3
-- **Animations**: Framer Motion 10.16.4
-- **Icons**: Lucide React 0.263.1
-- **Drag & Drop**: React Beautiful DnD 13.1.1
-- **Date Handling**: date-fns 2.30.0
-- **Routing**: React Router DOM 6.8.1
+### Root Directory
+- `npm run dev` - Start both frontend and backend in development
+- `npm run install:all` - Install dependencies for all packages
+- `npm run build` - Build frontend for production
 
-## 🎯 Key Features Explained
+### Backend
+- `npm run dev` - Start backend with nodemon
+- `npm start` - Start backend in production
+- `npm run seed` - Seed database with sample data
 
-### 1. Landing Page
-- Professional design showcasing platform features
-- Smooth scroll animations and testimonials
-- Clear call-to-action for signup
+### Frontend
+- `npm run dev` - Start Vite development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
 
-### 2. Authentication System
-- Beautiful login/signup forms with validation
-- Password visibility toggle
-- Form error handling and loading states
-- Responsive design for all devices
+## 🔐 Environment Variables
 
-### 3. Dashboard Interface
-- Analytics cards showing key metrics
-- Workspace selection and navigation
-- Search functionality for tasks
-- User profile and notifications
+### Backend (.env)
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/taskflow
+JWT_SECRET=your_super_secret_jwt_key
+JWT_EXPIRE=30d
+NODE_ENV=production
+PORT=10000
+FRONTEND_URL=https://taskflow-frontend.onrender.com
+```
 
-### 4. Kanban Board
-- Drag-and-drop task management
-- Four-column workflow (To Do, In Progress, Review, Done)
-- Task cards with priority indicators
-- Assignee avatars and due dates
-- Tags and attachments support
+### Frontend (.env)
+```env
+VITE_API_URL=https://taskflow-backend.onrender.com/api
+```
 
-### 5. Workspace Management
-- Detailed workspace information
-- Team member management
-- Workspace-specific Kanban boards
-- Member roles and permissions
-
-## 🎨 Design System
-
-### Colors
-- **Primary**: Blue (#3B82F6) - Main brand color
-- **Success**: Green (#10B981) - Positive actions
-- **Warning**: Yellow (#F59E0B) - Caution states
-- **Error**: Red (#EF4444) - Error states
-- **Gray Scale**: 50-900 for text and backgrounds
-
-### Typography
-- **Font Family**: Inter (Google Fonts)
-- **Weights**: 300, 400, 500, 600, 700
-- **Responsive**: Scales appropriately on all devices
-
-### Components
-- **Cards**: Rounded corners, subtle shadows
-- **Buttons**: Primary and secondary variants
-- **Inputs**: Focus states with ring indicators
-- **Animations**: Smooth transitions and hover effects
-
-## 📱 Responsive Design
-
-The platform is fully responsive and optimized for:
-- **Desktop**: 1024px and above
-- **Tablet**: 768px - 1023px
-- **Mobile**: 320px - 767px
-
-## 🔧 Development
-
-### Available Scripts
+## 🧪 Testing
 
 ```bash
-# Start development server
-npm run dev
+# Test backend
+cd backend
+npm test
 
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Run linting
-npm run lint
+# Test frontend
+cd frontend
+npm run test
 ```
 
-### Code Style
-- TypeScript for type safety
-- ESLint for code quality
-- Prettier for formatting
-- Component-based architecture
+## 📊 API Endpoints
 
-## 🚀 Deployment
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user
 
-### Build for Production
-```bash
-npm run build
-```
+### Workspaces
+- `GET /api/workspaces` - Get user workspaces
+- `POST /api/workspaces` - Create workspace
+- `GET /api/workspaces/:id` - Get workspace details
 
-The build output will be in the `dist/` directory, ready for deployment to any static hosting service.
+### Tasks
+- `GET /api/tasks` - Get workspace tasks
+- `POST /api/tasks` - Create task
+- `PUT /api/tasks/:id` - Update task
+- `DELETE /api/tasks/:id` - Delete task
 
-### Recommended Hosting
-- **Vercel**: Zero-config deployment
-- **Netlify**: Easy CI/CD integration
-- **GitHub Pages**: Free hosting for open source
-- **AWS S3**: Scalable static hosting
+### Analytics
+- `GET /api/analytics` - Get workspace analytics
+- `GET /api/analytics/realtime` - Get real-time metrics
 
 ## 🤝 Contributing
 
@@ -197,25 +185,28 @@ The build output will be in the `dist/` directory, ready for deployment to any s
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🆘 Support
 
-- **React Team** - For the amazing framework
-- **Tailwind CSS** - For the utility-first CSS framework
-- **Framer Motion** - For smooth animations
-- **Lucide** - For beautiful icons
-- **Vite** - For the fast build tool
+If you encounter any issues:
 
-## 📞 Support
+1. Check the [troubleshooting section](./DEPLOYMENT.md#troubleshooting)
+2. Review the deployment logs in Render dashboard
+3. Verify environment variables are set correctly
+4. Test locally first
 
-If you have any questions or need help, please:
-- Open an issue on GitHub
-- Check the documentation
-- Contact the development team
+## 🎉 Acknowledgments
+
+- [React](https://reactjs.org/) - Frontend framework
+- [Node.js](https://nodejs.org/) - Backend runtime
+- [MongoDB](https://mongodb.com/) - Database
+- [Render](https://render.com/) - Free hosting
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Framer Motion](https://framer.com/motion/) - Animations
 
 ---
 
-**Built with ❤️ by the TaskFlow Team** 
+**Made with ❤️ by the TaskFlow Team** 

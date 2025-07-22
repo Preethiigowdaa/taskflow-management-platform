@@ -2,8 +2,12 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Apply auth middleware to all routes
+router.use(authMiddleware);
 
 // @desc    Get user profile
 // @route   GET /api/users/profile

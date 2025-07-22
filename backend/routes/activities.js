@@ -1,9 +1,12 @@
 const express = require('express');
 const Activity = require('../models/Activity');
 const { asyncHandler } = require('../middleware/errorHandler');
-const { workspacePermissionMiddleware } = require('../middleware/auth');
+const { authMiddleware, workspacePermissionMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Apply auth middleware to all routes
+router.use(authMiddleware);
 
 // @desc    Get workspace activity feed
 // @route   GET /api/activities

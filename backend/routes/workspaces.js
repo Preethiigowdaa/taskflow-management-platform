@@ -3,9 +3,12 @@ const { body, validationResult } = require('express-validator');
 const Workspace = require('../models/Workspace');
 const User = require('../models/User');
 const { asyncHandler } = require('../middleware/errorHandler');
-const { workspacePermissionMiddleware } = require('../middleware/auth');
+const { authMiddleware, workspacePermissionMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Apply auth middleware to all routes
+router.use(authMiddleware);
 
 // @desc    Get all workspaces for current user
 // @route   GET /api/workspaces

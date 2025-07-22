@@ -3,9 +3,12 @@ const { body, validationResult } = require('express-validator');
 const Task = require('../models/Task');
 const Workspace = require('../models/Workspace');
 const { asyncHandler } = require('../middleware/errorHandler');
-const { workspacePermissionMiddleware, taskPermissionMiddleware } = require('../middleware/auth');
+const { authMiddleware, workspacePermissionMiddleware, taskPermissionMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Apply auth middleware to all routes
+router.use(authMiddleware);
 
 // @desc    Get all tasks for a workspace
 // @route   GET /api/tasks
